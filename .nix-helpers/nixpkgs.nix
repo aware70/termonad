@@ -11,8 +11,13 @@ let
     if isNull nixpkgs
       then
         builtins.fetchTarball {
+          # this is our normal one
           url = "https://github.com/NixOS/nixpkgs/archive/237285295764fb063ec1ca509c36b17c4990eeb4.tar.gz";
           sha256 = "1cl40yz7ry6x2nbzpc5pkf0q5p0fxvi0c2n7la0pz5g1n80n4xlq";
+
+          # this is the one where we have trying to fix the argument list too long error for cc
+          # url = "https://github.com/NixOS/nixpkgs/archive/2bac916423e6efac9e294173096f13831a6b2102.tar.gz";
+          # sha256 = "11ngaqx85h1nig3i8mw3w1ipa5d1shnkraln7vfly4j26ay57fal";
         }
       else
         nixpkgs;
@@ -60,12 +65,12 @@ let
         focuslist = hsuper.focuslist or (myfocuslist hself.callCabal2nix);
 
         # Set the haskell-gi libraries to generate documentation.
-        gi-gdk = doHaddock hsuper.gi-gdk;
+        gi-gdk = (doHaddock hsuper.gi-gdk).overrideAttrs (oldAttrs: { strictDeps = true; });
         gi-gio = doHaddock hsuper.gi-gio;
         gi-glib = doHaddock hsuper.gi-glib;
-        gi-gtk = doHaddock hsuper.gi-gtk;
+        gi-gtk = (doHaddock hsuper.gi-gtk).overrideAttrs (oldAttrs: { strictDeps = true; });
         gi-pango = doHaddock hsuper.gi-pango;
-        gi-vte = doHaddock hsuper.gi-vte;
+        gi-vte = (doHaddock hsuper.gi-vte).overrideAttrs (oldAttrs: { strictDeps = true; });
 
         termonad = termonadOverride self.stdenv.lib self.gnome3 hself.callCabal2nix self.haskell.lib.overrideCabal;
 
