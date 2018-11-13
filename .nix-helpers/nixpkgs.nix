@@ -11,8 +11,14 @@ let
     if isNull nixpkgs
       then
         builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/237285295764fb063ec1ca509c36b17c4990eeb4.tar.gz";
-          sha256 = "1cl40yz7ry6x2nbzpc5pkf0q5p0fxvi0c2n7la0pz5g1n80n4xlq";
+          # this is our normal one
+          # url = "https://github.com/NixOS/nixpkgs/archive/237285295764fb063ec1ca509c36b17c4990eeb4.tar.gz";
+          # sha256 = "1cl40yz7ry6x2nbzpc5pkf0q5p0fxvi0c2n7la0pz5g1n80n4xlq";
+
+          # This is the one where we have trying to fix the argument list too long error for cc.
+          # This is from https://github.com/NixOS/nixpkgs/pull/49552.
+          url = "https://github.com/NixOS/nixpkgs/archive/2bac916423e6efac9e294173096f13831a6b2102.tar.gz";
+          sha256 = "11ngaqx85h1nig3i8mw3w1ipa5d1shnkraln7vfly4j26ay57fal";
         }
       else
         nixpkgs;
