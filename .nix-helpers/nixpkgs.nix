@@ -6,13 +6,17 @@
 { compiler ? null, nixpkgs ? null }:
 
 let
-  # recent version of nixpkgs as of 2018-11-09
   nixpkgsSrc =
     if isNull nixpkgs
       then
         builtins.fetchTarball {
-          url = "https://github.com/NixOS/nixpkgs/archive/237285295764fb063ec1ca509c36b17c4990eeb4.tar.gz";
-          sha256 = "1cl40yz7ry6x2nbzpc5pkf0q5p0fxvi0c2n7la0pz5g1n80n4xlq";
+          # nixpkgs as of 2018-11-09
+          # url = "https://github.com/NixOS/nixpkgs/archive/237285295764fb063ec1ca509c36b17c4990eeb4.tar.gz";
+          # sha256 = "1cl40yz7ry6x2nbzpc5pkf0q5p0fxvi0c2n7la0pz5g1n80n4xlq";
+
+          # nixpkgs from matthewbauer from https://github.com/NixOS/nixpkgs/issues/49206#issuecomment-439665159
+          url = "https://github.com/matthewbauer/nixpkgs/archive/83fef595b1c8ee1b1907ec214aae555a5d4fa60a.tar.gz";
+          sha256 = "0zk6ljmpv3h725czbwwvgmpniwrdcahsfh33kz0bfsmvaaxsqwy3";
         }
       else
         nixpkgs;
