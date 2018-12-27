@@ -104,6 +104,7 @@ import Termonad.Types
   , tmStateNotebook
   )
 import Termonad.XML (interfaceText, menuText)
+import Termonad.Options (termonadOptions)
 
 setupScreenStyle :: IO ()
 setupScreenStyle = do
@@ -399,11 +400,15 @@ appStartup _app = pure ()
 -- function does.
 start :: TMConfig -> IO ()
 start tmConfig = do
+
+  -- Override tmConfig with CL options
+  finalTMConfig <- lensOptions termonadOptions tmConfig
+
   -- app <- appNew (Just "haskell.termonad") [ApplicationFlagsFlagsNone]
   -- Make sure the application is not unique, so we can open multiple copies of it.
   app <- appNew Nothing [ApplicationFlagsFlagsNone]
   void $ onApplicationStartup app (appStartup app)
-  void $ onApplicationActivate app (appActivate tmConfig app)
+  void $ onApplicationActivate app (appActivate finalTMConfig app)
   void $ applicationRun app Nothing
 
 -- | Run Termonad with the given 'TMConfig'.
