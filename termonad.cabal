@@ -17,7 +17,8 @@ extra-source-files:  README.md
                    , img/termonad.png
                    , .nix-helpers/nixops.nix
                    , .nix-helpers/nixpkgs.nix
-                   , .nix-helpers/stack-nix-shell.nix
+                   , .nix-helpers/stack-fhs-env.nix
+                   , .nix-helpers/stack-shell.nix
                    , .nix-helpers/termonad-with-packages.nix
                    , shell.nix
 data-files:          img/termonad-lambda.png
@@ -51,7 +52,7 @@ library
                      , Termonad.XML
                      , Termonad.Options
   other-modules:       Paths_termonad
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.11 && < 5
                      , adjunctions
                      , classy-prelude
                      , colour
@@ -192,6 +193,7 @@ executable termonad-example-colour-extension
   build-depends:       base
                      , termonad
                      , colour
+                     , singletons
   default-language:    Haskell2010
 
   if flag(buildexamples)
@@ -204,6 +206,7 @@ executable termonad-example-colour-extension-solarized
   build-depends:       base
                      , termonad
                      , colour
+                     , singletons
   default-language:    Haskell2010
 
   if flag(buildexamples)

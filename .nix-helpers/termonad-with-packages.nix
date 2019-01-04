@@ -105,17 +105,22 @@ in
 with (import ./nixpkgs.nix { inherit compiler nixpkgs; });
 
 let
-  ghcWithPackages = haskellPackages.ghcWithPackages;
-  env = ghcWithPackages (self: [ self.termonad ] ++ extraHaskellPackages self);
+  env = haskellPackages.ghcWithPackages (self: [
+    self.termonad
+  ] ++ extraHaskellPackages self);
 in
 
 stdenv.mkDerivation {
   name = "termonad-with-packages-${env.version}";
-  nativeBuildInputs = [ makeWrapper ];
+  buildInputs = [ gnome3.adwaita-icon-theme hicolor-icon-theme ];
+  nativeBuildInputs = [ wrapGAppsHook ];
   buildCommand = ''
     mkdir -p $out/bin
-    makeWrapper ${env}/bin/termonad $out/bin/termonad \
+    ln -sf ${env}/bin/termonad $out/bin/termonad
+    gappsWrapperArgs+=(
       --set NIX_GHC "${env}/bin/ghc"
+    )
+    wrapGAppsHook
   '';
   preferLocalBuild = true;
   allowSubstitutes = false;
