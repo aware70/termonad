@@ -110,7 +110,7 @@ import Termonad.Types
   , tmStateNotebook
   )
 import Termonad.XML (interfaceText, menuText)
-import Termonad.Options (TermonadOptions(..), termonadOptions)
+import Termonad.Options (termonadOptions)
 
 setupScreenStyle :: IO ()
 setupScreenStyle = do
@@ -515,19 +515,20 @@ start tmConfig = do
 --    @~\/.cache\/termonad\/termonad-linux-x86_64@), the effect should be the same.
 defaultMain :: TMConfig -> IO ()
 defaultMain tmConfig = do
-  TermonadOptions modCfg cfgDir <- termonadOptions (tmConfig ^. lensOptions)
+  -- Parse command line options. The modCfg closure is produced here and realMain
+  -- uses it to make sure that the passed in options override any resulting TMConfig.
+  (modCfg, cfgDir) <- termonadOptions tmConfig
   let params =
         defaultParams
           { projectName = "termonad"
           , showError = \(cfg, oldErrs) newErr -> (cfg, oldErrs <> "\n" <> newErr)
           , realMain = \(cfg, errs) -> do 
               putStrLn (pack errs)  
-              -- Override tmConfig with CL options
-              let finalTMConfig = lensOptions %~ modCfg $ cfg
-              start finalTMConfig
+              -- Override the new tmConfig with CL options
+              start (lensOptions %~ modCfg $ cfg)
           , configDir = return <$> cfgDir
           }
-  eitherRes <- tryIOError $ wrapMain params (tmConfig, "")
+  eitherRes <- tryIOError $ wrapMain params (lensOptions %~ modCfg $ tmConfig, "")
   case eitherRes of
     Left ioErr
       | ioeGetErrorType ioErr == doesNotExistErrorType && ioeGetFileName ioErr == Just "ghc" -> do
@@ -535,8 +536,7 @@ defaultMain tmConfig = do
             "Could not find ghc on your PATH.  Ignoring your termonad.hs " <>
             "configuration file and running termonad with default settings."
           -- Override tmConfig with CL options
-          let finalTMConfig = lensOptions %~ modCfg $ tmConfig
-          start finalTMConfig
+          start (lensOptions %~ modCfg $ tmConfig)
       | otherwise -> do
           putStrLn $ "IO error occurred when trying to run termonad:"
           print ioErr

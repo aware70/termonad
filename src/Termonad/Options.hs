@@ -6,8 +6,8 @@
 -- Currently displays values from the active config as default options.
 
 {-# LANGUAGE ApplicativeDo #-}
-module Termonad.Options ( TermonadOptions(..), termonadOptions ) where
 
+module Termonad.Options ( termonadOptions ) where
 
 import Options.Applicative
 import Data.Semigroup ((<>))
@@ -16,16 +16,10 @@ import Control.Lens
 
 import Termonad.Prelude
 import Termonad.Lenses
-import Termonad.Config ( ConfigOptions(..)
-                       , ShowScrollbar(..)
-                       , ShowTabBar(..)
-                       , CursorBlinkMode(..)
-                       , FontSize(..)
-                       )
+import Termonad.Config
+
 type ModifyConfigOptions = ConfigOptions -> ConfigOptions
-data TermonadOptions = TermonadOptions { modConfigOptions :: ModifyConfigOptions
-                                       , dyreCfgDir :: Maybe FilePath
-                                       }
+type TermonadOptions = (ModifyConfigOptions, Maybe FilePath)
 
 -- | Simple reader for mapping on -> True etc.
 readOnOff :: ReadM Bool
@@ -81,9 +75,9 @@ parseConfirmExit cfg = option readOnOff ( long "confirm-exit"
 -- | WordCharExceptions: [--word-char-exceptions STRING]
 parseWordCharExceptions :: ConfigOptions -> Parser Text
 parseWordCharExceptions cfg = strOption ( long "word-char-exceptions"
-                                      <> help "Ask for confirmation when closing Termonad."
-                                      <> value (cfg ^. lensWordCharExceptions)
-                                      <> showDefault )
+                                       <> help "Ask for confirmation when closing Termonad."
+                                       <> value (cfg ^. lensWordCharExceptions)
+                                       <> showDefault )
 -- | ShowMenu: [--menu (off | on)]
 parseShowMenu :: ConfigOptions -> Parser Bool
 parseShowMenu cfg = option readOnOff ( long "menu"
@@ -106,16 +100,17 @@ parseShowTabBar cfg = option readTabBar ( long "tabbar"
 -- | CursorBlinkMode: [--cursor-blink (off | on)]
 parseCursorBlinkMode :: ConfigOptions -> Parser CursorBlinkMode
 parseCursorBlinkMode cfg = option readCursorBlinkMode ( long "cursor-blink"
-                                                        <> help "Cursor blink mode"
-                                                        <> value (cfg ^. lensCursorBlinkMode)
-                                                        <> showDefault )
+                                                     <> help "Cursor blink mode"
+                                                     <> value (cfg ^. lensCursorBlinkMode)
+                                                     <> showDefault )
 
   where readCursorBlinkMode = eitherReader $ \case
           "on" -> Right CursorBlinkModeOn
           "off" -> Right CursorBlinkModeOff
           _ -> Left ""
 
--- | TODO: Don't like applying each parser to cfg to extract the default values.
+-- TODO: I don't like applying each parser to cfg to extract the default values.
+-- There is probably a lensier way to do this.
 parseModifyConfigOptions :: ConfigOptions -> Parser ModifyConfigOptions
 parseModifyConfigOptions cfg = do
     fontFamily <- set (lensFontConfig . lensFontFamily) <$> parseFontFamily cfg
@@ -128,28 +123,28 @@ parseModifyConfigOptions cfg = do
     showTabBar <- set lensShowTabBar <$> parseShowTabBar cfg
     cursorBlinkMode <- set lensCursorBlinkMode <$> parseCursorBlinkMode cfg
     pure $ fontFamily
-         . fontSize
-         . showScrollbar
-         . scrollbackLen
-         . confirmExit
-         . wordCharExceptions
-         . showMenu
-         . showTabBar
-         . cursorBlinkMode
+         -- . fontSize
+         -- . showScrollbar
+         -- . scrollbackLen
+         -- . confirmExit
+         -- . wordCharExceptions
+         -- . showMenu
+         -- . showTabBar
+         -- . cursorBlinkMode
 
 parseConfigDir :: Parser (Maybe FilePath)
 parseConfigDir = optional $ strOption ( long "config-dir"
                                      <> help "Look here for termonad.hs" )
 
-parseOverrides :: ConfigOptions -> ParserInfo TermonadOptions
-parseOverrides cfg =
-  let overrides = TermonadOptions <$> parseModifyConfigOptions cfg <*> parseConfigDir
-   in info (overrides <**> helper)
-        ( fullDesc
-       <> progDesc "Termonad"
-       <> header "Termonad - a terminal emulator configurable in Haskell" )
+parseTermonadOptions :: TMConfig -> ParserInfo TermonadOptions
+parseTermonadOptions cfg =
+  let configOptions = cfg ^. lensOptions
+      overrides = (,) <$> parseModifyConfigOptions configOptions <*> parseConfigDir
+   in info (overrides <**> helper) (fullDesc
+                                  <> progDesc "Termonad"
+                                  <> header "Termonad - a terminal emulator configurable in Haskell" )
 
-termonadOptions :: ConfigOptions -> IO TermonadOptions
-termonadOptions = execParser . parseOverrides
-
+-- | Parse command line options
+termonadOptions :: TMConfig -> IO TermonadOptions
+termonadOptions = execParser . parseTermonadOptions
 
