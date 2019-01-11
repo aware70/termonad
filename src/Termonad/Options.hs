@@ -5,7 +5,8 @@
 --
 -- Currently displays values from the active config as default options.
 
-module Termonad.Options ( termonadOptions ) where
+{-# LANGUAGE ApplicativeDo #-}
+module Termonad.Options ( TermonadOptions(..), termonadOptions ) where
 
 
 import Options.Applicative
@@ -19,9 +20,12 @@ import Termonad.Config ( ConfigOptions(..)
                        , ShowScrollbar(..)
                        , ShowTabBar(..)
                        , CursorBlinkMode(..)
-                       , FontConfig(..)
                        , FontSize(..)
                        )
+type ModifyConfigOptions = ConfigOptions -> ConfigOptions
+data TermonadOptions = TermonadOptions { modConfigOptions :: ModifyConfigOptions
+                                       , dyreCfgDir :: Maybe FilePath
+                                       }
 
 -- | Simple reader for mapping on -> True etc.
 readOnOff :: ReadM Bool
@@ -112,25 +116,40 @@ parseCursorBlinkMode cfg = option readCursorBlinkMode ( long "cursor-blink"
           _ -> Left ""
 
 -- | TODO: Don't like applying each parser to cfg to extract the default values.
-parseConfigOptions :: ConfigOptions -> Parser ConfigOptions
-parseConfigOptions cfg = 
-  ConfigOptions
-    <$> (FontConfig <$> parseFontFamily cfg <*> parseFontSize cfg)
-    <*> parseShowScrollbar cfg
-    <*> parseScrollbackLen cfg
-    <*> parseConfirmExit cfg
-    <*> parseWordCharExceptions cfg
-    <*> parseShowMenu cfg
-    <*> parseShowTabBar cfg
-    <*> parseCursorBlinkMode cfg
+parseModifyConfigOptions :: ConfigOptions -> Parser ModifyConfigOptions
+parseModifyConfigOptions cfg = do
+    fontFamily <- set (lensFontConfig . lensFontFamily) <$> parseFontFamily cfg
+    fontSize <- set (lensFontConfig . lensFontSize) <$> parseFontSize cfg
+    showScrollbar <- set lensShowScrollbar <$> parseShowScrollbar cfg
+    scrollbackLen <- set lensScrollbackLen <$> parseScrollbackLen cfg
+    confirmExit <- set lensConfirmExit <$> parseConfirmExit cfg
+    wordCharExceptions <- set lensWordCharExceptions <$> parseWordCharExceptions cfg
+    showMenu <- set lensShowMenu <$> parseShowMenu cfg
+    showTabBar <- set lensShowTabBar <$> parseShowTabBar cfg
+    cursorBlinkMode <- set lensCursorBlinkMode <$> parseCursorBlinkMode cfg
+    pure $ fontFamily
+         . fontSize
+         . showScrollbar
+         . scrollbackLen
+         . confirmExit
+         . wordCharExceptions
+         . showMenu
+         . showTabBar
+         . cursorBlinkMode
 
-parseOptions :: ConfigOptions -> ParserInfo ConfigOptions
-parseOptions cfg = info (parseConfigOptions cfg <**> helper)
-  ( fullDesc
- <> progDesc "Termonad"
- <> header "Termonad - a terminal emulator configurable in Haskell" )
+parseConfigDir :: Parser (Maybe FilePath)
+parseConfigDir = optional $ strOption ( long "config-dir"
+                                     <> help "Look here for termonad.hs" )
 
-termonadOptions :: ConfigOptions -> IO ConfigOptions
-termonadOptions = execParser . parseOptions
+parseOverrides :: ConfigOptions -> ParserInfo TermonadOptions
+parseOverrides cfg =
+  let overrides = TermonadOptions <$> parseModifyConfigOptions cfg <*> parseConfigDir
+   in info (overrides <**> helper)
+        ( fullDesc
+       <> progDesc "Termonad"
+       <> header "Termonad - a terminal emulator configurable in Haskell" )
+
+termonadOptions :: ConfigOptions -> IO TermonadOptions
+termonadOptions = execParser . parseOverrides
 
 

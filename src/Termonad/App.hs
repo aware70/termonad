@@ -3,8 +3,8 @@ module Termonad.App where
 
 import Termonad.Prelude
 
-import Config.Dyre (defaultParams, projectName, realMain, showError, wrapMain)
-import Control.Lens ((&), (.~), (^.), (^..))
+import Config.Dyre (defaultParams, projectName, realMain, showError, wrapMain, configDir)
+import Control.Lens ((&), (.~), (^.), (^..), (%~))
 import Data.FocusList (focusList, moveFromToFL, updateFocusFL)
 import Data.Sequence (findIndexR)
 import GI.Gdk (castTo, managedForeignPtr, screenGetDefault)
@@ -110,7 +110,7 @@ import Termonad.Types
   , tmStateNotebook
   )
 import Termonad.XML (interfaceText, menuText)
-import Termonad.Options (termonadOptions)
+import Termonad.Options (TermonadOptions(..), termonadOptions)
 
 setupScreenStyle :: IO ()
 setupScreenStyle = do
@@ -450,14 +450,11 @@ appStartup _app = pure ()
 start :: TMConfig -> IO ()
 start tmConfig = do
 
-  -- Override tmConfig with CL options
-  finalTMConfig <- lensOptions termonadOptions tmConfig
-
   -- app <- appNew (Just "haskell.termonad") [ApplicationFlagsFlagsNone]
   -- Make sure the application is not unique, so we can open multiple copies of it.
   app <- appNew Nothing [ApplicationFlagsFlagsNone]
   void $ onApplicationStartup app (appStartup app)
-  void $ onApplicationActivate app (appActivate finalTMConfig app)
+  void $ onApplicationActivate app (appActivate tmConfig app)
   void $ applicationRun app Nothing
 
 -- | Run Termonad with the given 'TMConfig'.
@@ -518,11 +515,17 @@ start tmConfig = do
 --    @~\/.cache\/termonad\/termonad-linux-x86_64@), the effect should be the same.
 defaultMain :: TMConfig -> IO ()
 defaultMain tmConfig = do
+  TermonadOptions modCfg cfgDir <- termonadOptions (tmConfig ^. lensOptions)
   let params =
         defaultParams
           { projectName = "termonad"
           , showError = \(cfg, oldErrs) newErr -> (cfg, oldErrs <> "\n" <> newErr)
-          , realMain = \(cfg, errs) -> putStrLn (pack errs) *> start cfg
+          , realMain = \(cfg, errs) -> do 
+              putStrLn (pack errs)  
+              -- Override tmConfig with CL options
+              let finalTMConfig = lensOptions %~ modCfg $ cfg
+              start finalTMConfig
+          , configDir = return <$> cfgDir
           }
   eitherRes <- tryIOError $ wrapMain params (tmConfig, "")
   case eitherRes of
@@ -531,7 +534,9 @@ defaultMain tmConfig = do
           putStrLn $
             "Could not find ghc on your PATH.  Ignoring your termonad.hs " <>
             "configuration file and running termonad with default settings."
-          start tmConfig
+          -- Override tmConfig with CL options
+          let finalTMConfig = lensOptions %~ modCfg $ tmConfig
+          start finalTMConfig
       | otherwise -> do
           putStrLn $ "IO error occurred when trying to run termonad:"
           print ioErr
