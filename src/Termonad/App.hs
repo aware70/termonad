@@ -529,7 +529,7 @@ defaultMain tmConfig = do
               start (lensOptions %~ modCfg $ cfg)
           , configDir = return <$> cfgDir
           }
-  eitherRes <- tryIOError $ wrapMain params (lensOptions %~ modCfg $ tmConfig, "")
+  eitherRes <- tryIOError $ wrapMain params (tmConfig, "")
   case eitherRes of
     Left ioErr
       | ioeGetErrorType ioErr == doesNotExistErrorType && ioeGetFileName ioErr == Just "ghc" -> do
