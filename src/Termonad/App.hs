@@ -4,6 +4,7 @@ module Termonad.App where
 import Termonad.Prelude
 
 import Config.Dyre (defaultParams, projectName, realMain, showError, wrapMain, configDir)
+import Config.Dyre.Options (withDyreOptions)
 import Control.Lens ((&), (.~), (^.), (^..), (%~))
 import Data.FocusList (focusList, moveFromToFL, updateFocusFL)
 import Data.Sequence (findIndexR)
@@ -517,7 +518,7 @@ defaultMain :: TMConfig -> IO ()
 defaultMain tmConfig = do
   -- Parse command line options. The modCfg closure is produced here and realMain
   -- uses it to make sure that the passed in options override any resulting TMConfig.
-  (modCfg, cfgDir) <- termonadOptions tmConfig
+  (modCfg, cfgDir) <- withDyreOptions defaultParams $ termonadOptions tmConfig
   let params =
         defaultParams
           { projectName = "termonad"

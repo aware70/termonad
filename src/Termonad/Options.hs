@@ -123,14 +123,14 @@ parseModifyConfigOptions cfg = do
     showTabBar <- set lensShowTabBar <$> parseShowTabBar cfg
     cursorBlinkMode <- set lensCursorBlinkMode <$> parseCursorBlinkMode cfg
     pure $ fontFamily
-         -- . fontSize
-         -- . showScrollbar
-         -- . scrollbackLen
-         -- . confirmExit
-         -- . wordCharExceptions
-         -- . showMenu
-         -- . showTabBar
-         -- . cursorBlinkMode
+         . fontSize
+         . showScrollbar
+         . scrollbackLen
+         . confirmExit
+         . wordCharExceptions
+         . showMenu
+         . showTabBar
+         . cursorBlinkMode
 
 parseConfigDir :: Parser (Maybe FilePath)
 parseConfigDir = optional $ strOption ( long "config-dir"
