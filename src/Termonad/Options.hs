@@ -7,7 +7,7 @@
 
 {-# LANGUAGE ApplicativeDo #-}
 
-module Termonad.Options ( termonadOptions ) where
+module Termonad.Options ( termonadOptions, Parser(..) ) where
 
 import Options.Applicative
 import Data.Semigroup ((<>))
@@ -18,8 +18,8 @@ import Termonad.Prelude
 import Termonad.Lenses
 import Termonad.Config
 
-type ModifyConfigOptions = ConfigOptions -> ConfigOptions
-type TermonadOptions = (ModifyConfigOptions, Maybe FilePath)
+type ModifyTMConfig = TMConfig -> TMConfig
+type TermonadOptions = (ModifyTMConfig, Maybe FilePath)
 
 -- | Simple reader for mapping on -> True etc.
 readOnOff :: ReadM Bool
@@ -111,17 +111,17 @@ parseCursorBlinkMode cfg = option readCursorBlinkMode ( long "cursor-blink"
 
 -- TODO: I don't like applying each parser to cfg to extract the default values.
 -- There is probably a lensier way to do this.
-parseModifyConfigOptions :: ConfigOptions -> Parser ModifyConfigOptions
+parseModifyConfigOptions :: TMConfig -> Parser ModifyTMConfig
 parseModifyConfigOptions cfg = do
-    fontFamily <- set (lensFontConfig . lensFontFamily) <$> parseFontFamily cfg
-    fontSize <- set (lensFontConfig . lensFontSize) <$> parseFontSize cfg
-    showScrollbar <- set lensShowScrollbar <$> parseShowScrollbar cfg
-    scrollbackLen <- set lensScrollbackLen <$> parseScrollbackLen cfg
-    confirmExit <- set lensConfirmExit <$> parseConfirmExit cfg
-    wordCharExceptions <- set lensWordCharExceptions <$> parseWordCharExceptions cfg
-    showMenu <- set lensShowMenu <$> parseShowMenu cfg
-    showTabBar <- set lensShowTabBar <$> parseShowTabBar cfg
-    cursorBlinkMode <- set lensCursorBlinkMode <$> parseCursorBlinkMode cfg
+    fontFamily <- set (lensOptions . lensFontConfig . lensFontFamily) <$> parseFontFamily cfg
+    fontSize <- set (lensOptions . lensFontConfig . lensFontSize) <$> parseFontSize cfg
+    showScrollbar <- set (lensOptions . lensShowScrollbar) <$> parseShowScrollbar cfg
+    scrollbackLen <- set (lensOptions . lensScrollbackLen) <$> parseScrollbackLen cfg
+    confirmExit <- set (lensOptions . lensConfirmExit) <$> parseConfirmExit cfg
+    wordCharExceptions <- set (lensOptions . lensWordCharExceptions) <$> parseWordCharExceptions cfg
+    showMenu <- set (lensOptions . lensShowMenu) <$> parseShowMenu cfg
+    showTabBar <- set (lensOptions . lensShowTabBar) <$> parseShowTabBar cfg
+    cursorBlinkMode <- set (lensOptions . lensCursorBlinkMode) <$> parseCursorBlinkMode cfg
     pure $ fontFamily
          . fontSize
          . showScrollbar
