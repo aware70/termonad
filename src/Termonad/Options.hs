@@ -22,7 +22,10 @@ class HasOptions a where
   optionsHook :: a -> Parser a
 
 instance HasOptions TMConfig where
-  optionsHook = parseTMConfig
+  optionsHook :: TMConfig -> Parser TMConfig
+  optionsHook = do
+    builtInOptions <- traverseOf lensOptions parseConfigOptions 
+    pure builtInOptions
 
 -- | Simple reader for mapping on -> True etc.
 readOnOff :: ReadM Bool
@@ -112,7 +115,6 @@ parseCursorBlinkMode defVal = option readCursorBlinkMode ( long "cursor-blink"
                                                         <> help "Cursor blink mode"
                                                         <> value defVal
                                                         <> showDefault )
-
   where readCursorBlinkMode = eitherReader $ \case
           "on" -> Right CursorBlinkModeOn
           "off" -> Right CursorBlinkModeOff
@@ -136,22 +138,8 @@ parseConfigDir :: Parser (Maybe FilePath)
 parseConfigDir = optional $ strOption ( long "config-dir"
                                      <> help "Look here for termonad.hs" )
 
-parseTMConfig :: TMConfig -> Parser TMConfig
-parseTMConfig cfg = traverseOf lensOptions parseConfigOptions cfg
-                    
-    --configOptions <- set (lensOptions) <$> parseConfigOptions (cfg ^. lensOptions)
-    --configOptions <- lensOptions parseConfigOptions cfg
-    --pure $ const cfg
-
---parseTermonadOptions :: TMConfig -> ParserInfo TermonadOptions
---parseTermonadOptions cfg =
-  --let configOptions = cfg ^. lensOptions
-      --overrides = (,) <$> parseModifyConfigOptions configOptions <*> parseConfigDir
-   --in info (overrides <**> helper) (fullDesc
-                                  -- <> progDesc "Termonad"
-                                  -- <> header "Termonad - a terminal emulator configurable in Haskell" )
-
--- | Parse command line options
---termonadOptions :: TMConfig -> IO TermonadOptions
---termonadOptions = execParser . parseTermonadOptions
-
+runOptions :: Parser a -> IO a
+runOptions p = execParser $ info (p <**> helper) desc
+  where desc = ( fullDesc
+              <> progDesc "Termonad"
+              <> header "Termonad - a terminal emulator configurable in Haskell" )
