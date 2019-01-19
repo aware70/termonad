@@ -111,7 +111,7 @@ import Termonad.Types
   , tmStateNotebook
   )
 import Termonad.XML (interfaceText, menuText)
-import Termonad.Options (termonadOptions)
+--import Termonad.Options (termonadOptions)
 
 setupScreenStyle :: IO ()
 setupScreenStyle = do
@@ -518,7 +518,7 @@ defaultMain :: TMConfig -> IO ()
 defaultMain tmConfig = do
   -- Parse command line options. The modCfg closure is produced here and realMain
   -- uses it to make sure that the passed in options override any resulting TMConfig.
-  (modCfg, cfgDir) <- withDyreOptions defaultParams $ termonadOptions tmConfig
+  --(modCfg, cfgDir) <- termonadOptions tmConfig
   let params =
         defaultParams
           { projectName = "termonad"
@@ -526,8 +526,8 @@ defaultMain tmConfig = do
           , realMain = \(cfg, errs) -> do 
               putStrLn (pack errs)  
               -- Override the new tmConfig with CL options
-              start (lensOptions %~ modCfg $ cfg)
-          , configDir = return <$> cfgDir
+              start tmConfig
+          --, configDir = return <$> cfgDir
           }
   eitherRes <- tryIOError $ wrapMain params (tmConfig, "")
   case eitherRes of
@@ -537,7 +537,7 @@ defaultMain tmConfig = do
             "Could not find ghc on your PATH.  Ignoring your termonad.hs " <>
             "configuration file and running termonad with default settings."
           -- Override tmConfig with CL options
-          start (lensOptions %~ modCfg $ tmConfig)
+          start tmConfig
       | otherwise -> do
           putStrLn $ "IO error occurred when trying to run termonad:"
           print ioErr
